@@ -30,12 +30,27 @@ export async function GET(
           closed = true;
         }
       };
-      // Force-flush past intermediary proxy buffers (Cloudflare's HTTP/2 path
-      // holds responses until ~2 KB; SSE comments are spec-compliant and
-      // ignored by the client). Without this, the trycloudflare.com tunnel
-      // never delivers the first event until the heartbeat fires.
-      controller.enqueue(encoder.encode(":" + " ".repeat(2048) + "\n\n"));
+      // Force-flush past intermediary proxy buffers. trycloudflare.com edges
+      // sometimes hold streamed responses up to ~16 KB before forwarding, so
+      // we pad with a large SSE comment (spec-compliant, ignored by clients)
+      // to push past whatever buffer is in the way.
+      controller.enqueue(encoder.encode(":" + " ".repeat(65536) + "\n\n"));
       send("snapshot", initial);
+      // Burst a few early heartbeats so any first-byte buffer the edge holds
+      // is flushed quickly; after this the normal 15s cadence takes over.
+      let earlyBeats = 0;
+      const earlyTimer = setInterval(() => {
+        if (closed || earlyBeats >= 5) {
+          clearInterval(earlyTimer);
+          return;
+        }
+        earlyBeats++;
+        try {
+          controller.enqueue(encoder.encode(`event: ping\ndata: {}\n\n`));
+        } catch {
+          closed = true;
+        }
+      }, 500);
 
       const onVideo = (state: VideoState) => {
         if (state.video_id === videoId) send("video", state);
@@ -61,6 +76,7 @@ export async function GET(
         bus.off("video:update", onVideo);
         bus.off("iteration:update", onIteration);
         clearInterval(heartbeat);
+        clearInterval(earlyTimer);
         try {
           controller.close();
         } catch {
