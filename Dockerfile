@@ -1,17 +1,17 @@
 # Playwright base image: ships node 20, Chromium, and all system libs needed
 # for headless WebGL2. Pinned to match the playwright npm version.
-FROM mcr.microsoft.com/playwright:v1.50.0-jammy AS deps
+FROM mcr.microsoft.com/playwright:v1.60.0-jammy AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM mcr.microsoft.com/playwright:v1.50.0-jammy AS builder
+FROM mcr.microsoft.com/playwright:v1.60.0-jammy AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM mcr.microsoft.com/playwright:v1.50.0-jammy AS runner
+FROM mcr.microsoft.com/playwright:v1.60.0-jammy AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
