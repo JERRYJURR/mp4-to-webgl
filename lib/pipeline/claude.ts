@@ -25,8 +25,12 @@ const MODEL_ANALYSIS = process.env.CLAUDE_ANALYSIS_MODEL;
 const MODEL_GENERATION = process.env.CLAUDE_GENERATION_MODEL;
 const MODEL_DIAGNOSIS = process.env.CLAUDE_DIAGNOSIS_MODEL;
 
-const SDK_DEFAULT = "claude-opus-4-7";
-const fallback = BACKEND === "sdk" ? SDK_DEFAULT : "claude (cli, default)";
+const fallbackByBackend: Record<typeof BACKEND, string> = {
+  openrouter: "(set CLAUDE_*_MODEL)",
+  sdk: "claude-opus-4-7",
+  cli: "claude (cli, default)",
+};
+const fallback = fallbackByBackend[BACKEND];
 
 export const MODELS = {
   analysis: MODEL_ANALYSIS ?? fallback,

@@ -25,14 +25,20 @@ Open <http://localhost:3000>, pick a sample (or upload your own), click
 
 ## Environment
 
-- `ANTHROPIC_API_KEY` — required when the SDK backend is active (which it is
-  by default whenever this var is set). The local Claude Code CLI is used as
-  a fallback when the key is missing, or when `CLAUDE_BACKEND=cli` is set
-  (handy in local dev so iterations bill against your Claude Code
-  subscription instead of per-token).
+Backend selection precedence (first match wins):
+
+1. `CLAUDE_BACKEND=cli` — forces the local Claude Code CLI even if other keys are set.
+2. `OPENROUTER_API_KEY` — multi-provider via OpenRouter. Lets you mix Gemini
+   for analysis + Sonnet for generation, with per-key spend caps in the
+   OpenRouter dashboard. When this is the active backend, the model env vars
+   below MUST carry OpenRouter slugs (e.g. `google/gemini-3.1-pro-preview`,
+   `anthropic/claude-sonnet-4.6`).
+3. `ANTHROPIC_API_KEY` — direct Anthropic SDK, per-token billing. Defaults to
+   Opus 4.7 for analysis/generation if the model env vars are unset.
+4. Otherwise — Claude Code CLI (local dev only).
+
 - `CLAUDE_GENERATION_MODEL`, `CLAUDE_ANALYSIS_MODEL`, `CLAUDE_DIAGNOSIS_MODEL` —
-  optional model overrides. Defaults: Opus 4.7 for analysis/generation, Sonnet
-  4.6 for diagnosis (cheap diagnosis is fine).
+  model identifiers passed to whichever backend is active.
 - `APP_PASSWORD` (+ optional `APP_USERNAME`, default `demo`) — when set, the
   whole app sits behind HTTP basic auth. Used for shared-link demos. Playwright
   inside the container is given the same creds automatically.

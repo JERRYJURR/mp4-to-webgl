@@ -1,20 +1,39 @@
 // server-only enforced by Next.js route boundary
 //
-// Picks the Claude call backend. With ANTHROPIC_API_KEY set (and
-// CLAUDE_BACKEND != "cli") we use the Anthropic SDK — required for
-// container deployments where the Claude Code CLI keychain auth is not
-// available. Otherwise we fall back to the CLI, which consumes a Claude
-// Code subscription rather than per-token credits.
+// Picks the Claude call backend:
+//   - OpenRouter (multi-provider, per-key credit caps) when OPENROUTER_API_KEY
+//     is set. The pipeline becomes provider-agnostic — model env vars carry
+//     OpenRouter slugs like "google/gemini-3.1-pro-preview" or
+//     "anthropic/claude-sonnet-4.6".
+//   - Anthropic SDK (per-token) when ANTHROPIC_API_KEY is set.
+//   - Claude Code CLI otherwise — local-dev default, consumes a Claude Code
+//     subscription rather than per-token credits. Forceable via CLAUDE_BACKEND=cli.
 import * as cli from "./claude-cli";
 import * as sdk from "./claude-sdk";
+import * as openrouter from "./claude-openrouter";
 
-const useSdk =
-  !!process.env.ANTHROPIC_API_KEY && process.env.CLAUDE_BACKEND !== "cli";
+type Backend = "openrouter" | "sdk" | "cli";
 
-export const BACKEND: "sdk" | "cli" = useSdk ? "sdk" : "cli";
-export const callClaude = useSdk ? sdk.callClaude : cli.callClaude;
-export const imageBlockFromFile = useSdk
-  ? sdk.imageBlockFromFile
-  : cli.imageBlockFromFile;
-export const textBlock = useSdk ? sdk.textBlock : cli.textBlock;
+function pickBackend(): Backend {
+  if (process.env.CLAUDE_BACKEND === "cli") return "cli";
+  if (process.env.OPENROUTER_API_KEY) return "openrouter";
+  if (process.env.ANTHROPIC_API_KEY) return "sdk";
+  return "cli";
+}
+
+const impl = (() => {
+  switch (pickBackend()) {
+    case "openrouter":
+      return openrouter;
+    case "sdk":
+      return sdk;
+    case "cli":
+      return cli;
+  }
+})();
+
+export const BACKEND: Backend = pickBackend();
+export const callClaude = impl.callClaude;
+export const imageBlockFromFile = impl.imageBlockFromFile;
+export const textBlock = impl.textBlock;
 export type { UserContentBlock } from "./claude-cli";
