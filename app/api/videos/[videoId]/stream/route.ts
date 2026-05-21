@@ -30,6 +30,11 @@ export async function GET(
           closed = true;
         }
       };
+      // Force-flush past intermediary proxy buffers (Cloudflare's HTTP/2 path
+      // holds responses until ~2 KB; SSE comments are spec-compliant and
+      // ignored by the client). Without this, the trycloudflare.com tunnel
+      // never delivers the first event until the heartbeat fires.
+      controller.enqueue(encoder.encode(":" + " ".repeat(2048) + "\n\n"));
       send("snapshot", initial);
 
       const onVideo = (state: VideoState) => {
