@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #09090b;
+  --color-foam: #fafafa;
+  --color-mint: #4ade80;
+  --color-mint-soft: #bbf7d0;
+  --font-sans: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: local("Bricolage Grotesque");
+  font-display: swap;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-foam);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: var(--color-mint);
+  color: var(--color-ink);
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-slow {
+  animation: spin-slow 1.4s linear infinite;
+}

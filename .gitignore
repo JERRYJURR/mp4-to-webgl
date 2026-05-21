@@ -1,0 +1,12 @@
+node_modules
+.next
+.env*.local
+.env
+videos/**/state.json
+videos/**/frames
+videos/**/source.mp4
+videos/**/thumbnail.png
+!videos/.gitkeep
+.DS_Store
+*.log
+tsconfig.tsbuildinfo

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+echo "PORT    PID      COMMAND              PROJECT"
+echo "----------------------------------------------------"
+
+lsof -iTCP -sTCP:LISTEN -n -P | awk 'NR>1 {print $2, $9}' \
+| awk '
+  {
+    pid=$1
+    addr=$2
+    port=addr
+    sub(/^.*:/,"",port)
+    key=pid ":" port
+    if (!seen[key]++) print pid, port
+  }
+' \
+| while read -r pid port; do
+    cmd=$(ps -p "$pid" -o comm= 2>/dev/null)
+    cwd=$(lsof -p "$pid" 2>/dev/null | awk '$4=="cwd" {print $9; exit}')
+    printf "%-7s %-8s %-20s %s\n" "$port" "$pid" "$cmd" "${cwd:-/}"
+  done \
+| sort -n
