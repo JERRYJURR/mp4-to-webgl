@@ -9,29 +9,29 @@ import {
   callClaude,
   imageBlockFromFile,
   textBlock,
+  BACKEND,
   type UserContentBlock,
-} from "./claude-cli";
+} from "./claude-backend";
 
 /**
- * Backend pipeline calls go through the `claude` CLI rather than the Anthropic
- * SDK, so they consume your Claude Code subscription rather than per-token API
- * credits. The CLI wrapper uses --no-session-persistence and an ephemeral cwd;
- * each call cleans up its temp dir and ~/.claude/projects entry on exit.
- *
- * Auth itself (OAuth/keychain) lives outside this module — we never read or
- * write it.
+ * Backend pipeline calls go through either the `claude` CLI (Claude Code
+ * subscription) or the Anthropic SDK (per-token billing), picked by
+ * lib/pipeline/claude-backend.ts based on env. The CLI is preferred for
+ * local dev; the SDK is used in container deployments because the CLI's
+ * OAuth keychain auth doesn't travel to a remote host.
  */
 
-// Model overrides go to the CLI via --model; defaults follow Claude Code's
-// own default for the user's plan (we just don't pass --model unless asked).
 const MODEL_ANALYSIS = process.env.CLAUDE_ANALYSIS_MODEL;
 const MODEL_GENERATION = process.env.CLAUDE_GENERATION_MODEL;
 const MODEL_DIAGNOSIS = process.env.CLAUDE_DIAGNOSIS_MODEL;
 
+const SDK_DEFAULT = "claude-opus-4-7";
+const fallback = BACKEND === "sdk" ? SDK_DEFAULT : "claude (cli, default)";
+
 export const MODELS = {
-  analysis: MODEL_ANALYSIS ?? "claude (cli, default)",
-  generation: MODEL_GENERATION ?? "claude (cli, default)",
-  diagnosis: MODEL_DIAGNOSIS ?? "claude (cli, default)",
+  analysis: MODEL_ANALYSIS ?? fallback,
+  generation: MODEL_GENERATION ?? fallback,
+  diagnosis: MODEL_DIAGNOSIS ?? fallback,
 };
 
 function extractJson<T = unknown>(text: string): T {

@@ -66,6 +66,14 @@ export async function capturePlayedFrames(
   const context: BrowserContext = await browser.newContext({
     viewport: { width: width + 32, height: height + 32 },
     deviceScaleFactor: 1,
+    ...(process.env.APP_PASSWORD
+      ? {
+          httpCredentials: {
+            username: process.env.APP_USERNAME ?? "demo",
+            password: process.env.APP_PASSWORD,
+          },
+        }
+      : {}),
   });
   const errors: string[] = [];
   const written: string[] = [];

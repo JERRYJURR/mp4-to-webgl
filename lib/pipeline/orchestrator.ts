@@ -640,6 +640,14 @@ async function compileThreeInPlaywright(
   const context = await browser.newContext({
     viewport: { width: 64, height: 64 },
     deviceScaleFactor: 1,
+    ...(process.env.APP_PASSWORD
+      ? {
+          httpCredentials: {
+            username: process.env.APP_USERNAME ?? "demo",
+            password: process.env.APP_PASSWORD,
+          },
+        }
+      : {}),
   });
   try {
     const page = await context.newPage();

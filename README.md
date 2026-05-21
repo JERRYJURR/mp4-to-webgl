@@ -25,10 +25,38 @@ Open <http://localhost:3000>, pick a sample (or upload your own), click
 
 ## Environment
 
-- `ANTHROPIC_API_KEY` — required for analysis, generation, and diagnosis calls.
+- `ANTHROPIC_API_KEY` — required when the SDK backend is active (which it is
+  by default whenever this var is set). The local Claude Code CLI is used as
+  a fallback when the key is missing, or when `CLAUDE_BACKEND=cli` is set
+  (handy in local dev so iterations bill against your Claude Code
+  subscription instead of per-token).
 - `CLAUDE_GENERATION_MODEL`, `CLAUDE_ANALYSIS_MODEL`, `CLAUDE_DIAGNOSIS_MODEL` —
   optional model overrides. Defaults: Opus 4.7 for analysis/generation, Sonnet
   4.6 for diagnosis (cheap diagnosis is fine).
+- `APP_PASSWORD` (+ optional `APP_USERNAME`, default `demo`) — when set, the
+  whole app sits behind HTTP basic auth. Used for shared-link demos. Playwright
+  inside the container is given the same creds automatically.
+
+## Deploy (Fly.io)
+
+```bash
+fly launch --no-deploy            # accept defaults; uses the bundled fly.toml
+fly secrets set \
+  ANTHROPIC_API_KEY=sk-ant-... \
+  APP_PASSWORD=your-shared-password
+fly deploy
+```
+
+Caveats:
+- Backend calls run through the Anthropic SDK in the container — visitors burn
+  per-token credit on every iteration. The bundled `fly.toml` defaults to
+  Sonnet 4.6 / Haiku 4.5 to cap cost; override with `fly secrets set
+  CLAUDE_GENERATION_MODEL=claude-opus-4-7` if you want Opus.
+- No persistent volume by default — restarts wipe uploads and re-seed the
+  bundled samples. Add `[[mounts] source = "videos" destination = "/app/videos"`
+  to `fly.toml` and `fly volumes create videos --size 1` if you need persistence.
+- The VM is sized `performance-2x` / 4GB because Chromium + ffmpeg run inside
+  the request path; smaller machines OOM during capture.
 
 ## Architecture
 
